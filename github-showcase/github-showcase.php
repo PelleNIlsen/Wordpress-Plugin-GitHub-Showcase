@@ -180,13 +180,11 @@ function getReposInfo($username, $reposSettings, $repos) {
     return $info;
 }
 
-// function profileCard($data, $settings) {
-//     foreach($settings as $key => $value) {
-//         echo $data[$key] . "<br>";
-//     }
-
-//     return $settings;
-// }
+function profileCard($data, $settings) {
+    foreach ($settings as $key => $value) {
+        echo $key . " - " . $data[$value] . "<br>";
+    }
+}
 
 add_action('admin_menu', 'github_showcase_add_admin_page');
 
@@ -227,7 +225,7 @@ function github_showcase_shortcode_showcase_repos() {
     $userInfo = getUserInfo($username, $userSettings);
     $reposInfo = getReposInfo($username, $reposSettings, $userSettings['public_repos']);
 
-    // $test = profileCard($userInfo, $userSettings);
+    $test = profileCard($userInfo, $userSettings);
 
     return var_dump($userInfo);
     // return var_dump($reposInfo);
