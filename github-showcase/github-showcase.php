@@ -33,6 +33,8 @@ function github_showcase_register_settings() {
     register_setting('github_showcase_options', 'show_repo_creation_date');
     register_setting('github_showcase_options', 'show_repo_update_date');
     register_setting('github_showcase_options', 'show_repo_language');
+    register_setting('github_showcase_options', 'show_repo_forks_count');
+    register_setting('github_showcase_options', 'show_repo_stars');
 }
 add_action('admin_init', 'github_showcase_register_settings');
 
@@ -146,43 +148,58 @@ function github_showcase_add_admin_page() {
     );
 }
 
-function getUserInfo($username) {
+function getUserInfo($username, $userSettings) {
     $url = "https://api.github.com/users/" . $username;
     $response = wp_remote_get($url);
     $json = wp_remote_retrieve_body($response);
     $data = json_decode($json, true);
 
-    return $data;
+    $info = array();
+    foreach ($userSettings as $key => $value) {
+        array_push($info, $data[$key]);
+    }
+
+    return $info;
 }
 
-function getReposInfo($username) {
+function getReposInfo($username, $reposSettings, $repos) {
     $url = "https://api.github.com/users/" . $username . "/repos";
     $response = wp_remote_get($url);
     $json = wp_remote_retrieve_body($response);
     $data = json_decode($json, true);
 
-    return $data;
-}
-
-function profileCard($data, $settings) {
-    $keys = array_keys($settings);
     $info = array();
-    foreach ($settings as $key => $value) {
-        array_push($info, $data[$key]);
+    for ($i = 0; $i < $repos; $i++) {
+        ${'array' . $i} = array();
+        foreach ($reposSettings as $key => $value) {
+            array_push(${'array' . $i}, $data[$i][$key]);
+        }
+        array_push($info, ${'array' . $i});
     }
+
     return $info;
 }
+
+// function profileCard($data, $settings) {
+//     foreach($settings as $key => $value) {
+//         echo $data[$key] . "<br>";
+//     }
+
+//     return $settings;
+// }
 
 add_action('admin_menu', 'github_showcase_add_admin_page');
 
 function github_showcase_shortcode_showcase_repos() {
 
+    $username = get_option('github_username');
+
     $userSettings = array(
-        'github_username' => get_option('github_username'),
-        'show_name' => get_option('show_name'),
-        'show_username' => get_option('show_username'),
-        'show_avatar' => get_option('show_avatar'),
-        'show_followers' => get_option('show_followers')
+        'name' => get_option('show_name'),
+        'login' => get_option('show_username'),
+        'avatar_url' => get_option('show_avatar'),
+        'followers' => get_option('show_followers'),
+        'public_repos' => get_option('repositories'),
     );
 
     foreach($userSettings as $key => $value) {
@@ -192,16 +209,13 @@ function github_showcase_shortcode_showcase_repos() {
     }
 
     $reposSettings = array(
-        'repositories' => get_option('repositories'),
-        'show_repo_name' => get_option('show_repo_name'),
-        'show_repo_description' => get_option('show_repo_description'),
-        'show_repo_language' => get_option('show_repo_language'),
-        'show_repo_update_date' => get_option('show_repo_update_date'),
-        'show_repo_creation_date' => get_option('show_repo_creation_date'),
-        'show_repo_update_date' => get_option('show_repo_update_date'),
-        'show_repo_language' => get_option('show_repo_language'),
-        'show_repo_forks_count' => get_option('show_repo_forks_count'),
-        'show_repo_stars' => get_option('show_repo_stars')
+        'name' => get_option('show_repo_name'),
+        'description' => get_option('show_repo_description'),
+        'created_at' => get_option('show_repo_creation_date'),
+        'updated_at' => get_option('show_repo_update_date'),
+        'language' => get_option('show_repo_language'),
+        'forks_count' => get_option('show_repo_forks_count'),
+        'stargazers_count' => get_option('show_repo_stars')
     );
 
     foreach($reposSettings as $key => $value) {
@@ -210,12 +224,13 @@ function github_showcase_shortcode_showcase_repos() {
         }
     }
 
-    $userInfo = getUserInfo($userSettings['github_username']);
-    $reposInfo = getReposInfo($userSettings['github_username']);
+    $userInfo = getUserInfo($username, $userSettings);
+    $reposInfo = getReposInfo($username, $reposSettings, $userSettings['public_repos']);
 
-    $test = profileCard($userInfo, $userSettings);
+    // $test = profileCard($userInfo, $userSettings);
 
     return var_dump($userInfo);
+    // return var_dump($reposInfo);
 }
 
 add_shortcode('github_showcase_repos', 'github_showcase_shortcode_showcase_repos');
